@@ -46,3 +46,11 @@ Finally, in order to ensure that the web application bundle is copied over each 
   ...
 },
 ```
+
+## Install Identity Vault
+
+In order to install Identity Vault you will need to use `ionic enterprise register` in order to register your product key. This will create a `.npmrc` file containing the product key. If you have already performed that step for your production application, you can just copy the `.npmrc` file from your production project. Since this application is for learning purposes only, you don't need to obtain another key. You can then install Identity Vault.
+
+```bash
+npm install @ionic-enterprise/identity-vault
+```
