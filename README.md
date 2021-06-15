@@ -54,3 +54,173 @@ In order to install Identity Vault you will need to use `ionic enterprise regist
 ```bash
 npm install @ionic-enterprise/identity-vault
 ```
+
+## Create the Vault
+
+In this step, we will create the vault and test it by storing and retrieving a value from it. We will call this value `session` since storing session data in a vault is the most common use case of Identity Vault. However, it is certainly not the _only_ use case.
+
+First, create a file named `src/hooks/useVault.ts`. Within this file we will create a hook that defines the vault and functions that abstract all of the logic we need in order to interact with the vault.
+
+```TypeScript
+import { useMemo, useState } from "react";
+import { Vault } from "@ionic-enterprise/identity-vault";
+
+const config = {
+  key: "io.ionic.getstartedivreact",
+  type: "SecureStorage" as any,
+  deviceSecurityType: "SystemPasscode" as any,
+  lockAfterBackgrounded: 2000,
+  shouldClearVaultAfterTooManyFailedAttempts: true,
+  customPasscodeInvalidUnlockAttempts: 2,
+  unlockVaultOnLoad: false,
+};
+
+const key = "sessionData";
+
+export const useVault = () => {
+  const [sessionValue, setSessionValue] = useState<string>("");
+
+  const vault = useMemo(() => {
+    const vault = new Vault(config);
+    return vault;
+  }, []);
+
+  const setSession = async (value: string): Promise<void> => {
+    setSessionValue(value);
+    await vault.setValue(key, value);
+  };
+
+  const restoreSession = async () => {
+    const value = await vault.getValue(key);
+    setSessionValue(value);
+  };
+
+  return { session: sessionValue, setSession, restoreSession };
+};
+```
+
+Let's look at this file section by section. The first thing we do is define a configuration for our vault. The `key` gives the vault a name. The other properties provide a default behavior for our vault - and as we shall see later - can be changed as we use the vault.
+
+```TypeScript
+const config = {
+  key: "io.ionic.getstartedivreact",
+  type: "SecureStorage" as any,
+  deviceSecurityType: "SystemPasscode" as any,
+  lockAfterBackgrounded: 2000,
+  shouldClearVaultAfterTooManyFailedAttempts: true,
+  customPasscodeInvalidUnlockAttempts: 2,
+  unlockVaultOnLoad: false,
+};
+```
+
+Next, we define a key for storing data. All data within the vault is stored as a key-value pair, and you can store multiple key-value pairs within a single vault.
+
+```TypeScript
+const key = "sessionData";
+```
+
+Finally, we create a hook that instantiates and memoizes our vault instance, uses state to reflect the current `session` data, and defines a couple of functions used to set and restore our session.
+
+```TypeScript
+export const useVault = () => {
+  const [sessionValue, setSessionValue] = useState<string>("");
+
+  const vault = useMemo(() => {
+    const vault = new Vault(config);
+    return vault;
+  }, []);
+
+  const setSession = async (value: string): Promise<void> => {
+    setSessionValue(value);
+    await vault.setValue(key, value);
+  };
+
+  const restoreSession = async () => {
+    const value = await vault.getValue(key);
+    setSessionValue(value);
+  };
+
+  return { session: sessionValue, setSession, restoreSession };
+};
+```
+
+**Note:** Rather than create functions such as `setSession()` and `restoreSession()`, we _could_ just return the `vault` from the hook and use its API directly in the rest of the application. However, that would expose the rest of the application to potential API changes as well as potentially result in duplicated code. In my opinion, it is a much better option to return functions that define how I would like the rest of the application to interact with the vault. This makes the code more maintainable and easier to debug.
+
+Now that we have the vault in place, let's switch over to `src/pages/Home.tsx` and code some simple interactions with the vault. Here is a snapshot of what we will change:
+
+1. Replace the `<ExploreContainer />` with a list of form controls
+2. Import and make use of the `useVault()` hook
+3. Add a local state value called `data`
+
+When we are done, the file will look like this:
+
+```TSX
+import { useState } from "react";
+import {
+  IonButton,
+  IonContent,
+  IonHeader,
+  IonInput,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+} from "@ionic/react";
+import "./Home.css";
+import { useVault } from "../hooks/useVault";
+
+const Home: React.FC = () => {
+  const { session, setSession, restoreSession } = useVault();
+  const [data, setData] = useState<string>("");
+
+  return (
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Blank</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
+        <IonHeader collapse="condense">
+          <IonToolbar>
+            <IonTitle size="large">Blank</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+
+        <IonList>
+          <IonItem>
+            <IonLabel position="floating">Enter the "session" data</IonLabel>
+            <IonInput
+              value={data}
+              onIonChange={(e) => setData(e.detail.value!)}
+            />
+          </IonItem>
+          <IonItem>
+            <IonLabel>
+              <IonButton expand="block" onClick={() => setSession(data)}>
+                Set Session Data
+              </IonButton>
+            </IonLabel>
+          </IonItem>
+          <IonItem>
+            <IonLabel>
+              <IonButton expand="block" onClick={() => restoreSession()}>
+                Restore Session Data
+              </IonButton>
+            </IonLabel>
+          </IonItem>
+          <IonItem>
+            <IonLabel>Session Data: {session}</IonLabel>
+          </IonItem>
+        </IonList>
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default Home;
+```
+
+**Note:** As we continue with this tutorial, we will just provide the new markup or code that is required. It is up to you to make sure that the correct imports and component definitions are added.
