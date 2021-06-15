@@ -2,8 +2,5 @@
 	"appId": "io.ionic.gettingstartedivreact",
 	"appName": "getting-started-iv-react",
 	"webDir": "build",
-	"bundledWebRuntime": false,
-	"server": {
-		"url": "http://192.168.50.166:8101"
-	}
+	"bundledWebRuntime": false
 }

@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Vault } from "@ionic-enterprise/identity-vault";
 
-const config = {
+let config = {
   key: "io.ionic.getstartedivreact",
   type: "SecureStorage" as any,
   deviceSecurityType: "SystemPasscode" as any,
@@ -16,6 +16,8 @@ const key = "sessionData";
 export const useVault = () => {
   const [sessionValue, setSessionValue] = useState<string>("");
   const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
+  const [lockType, setLockType] =
+    useState<"NoLocking" | "Biometrics" | "SystemPasscode">("NoLocking");
 
   const vault = useMemo(() => {
     const vault = new Vault(config);
@@ -29,6 +31,29 @@ export const useVault = () => {
 
     return vault;
   }, []);
+
+  useEffect(() => {
+    let type: "SecureStorage" | "DeviceSecurity";
+    let deviceSecurityType: "SystemPasscode" | "Biometrics";
+
+    switch (lockType) {
+      case "Biometrics":
+        type = "DeviceSecurity";
+        deviceSecurityType = "Biometrics";
+        break;
+      case "SystemPasscode":
+        type = "DeviceSecurity";
+        deviceSecurityType = "SystemPasscode";
+        break;
+      default:
+        type = "SecureStorage";
+        deviceSecurityType = "SystemPasscode";
+        break;
+    }
+
+    config = { ...config, type, deviceSecurityType };
+    vault.updateConfig(config);
+  }, [lockType, vault]);
 
   const setSession = async (value: string): Promise<void> => {
     setSessionValue(value);
@@ -51,6 +76,9 @@ export const useVault = () => {
   return {
     session: sessionValue,
     vaultIsLocked,
+
+    lockType,
+    setLockType,
 
     lockVault,
     unlockVault,

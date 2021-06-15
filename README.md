@@ -346,12 +346,11 @@ Then add the following code to the `Home` component:
 const [privacyScreen, setPrivacyScreen] = useState<boolean>(false);
 
 useEffect(() => {
-  const isPrivacyScreenEnabled = async () => {
+ (async () => {
     const isPrivacyScreenEnabled =
       await Device.isHideScreenOnBackgroundEnabled();
     setPrivacyScreen(isPrivacyScreenEnabled);
-  };
-  isPrivacyScreenEnabled();
+  })();
 }, []);
 
 const handlePrivacyScreenChanged = (evt: { detail: { checked: boolean } }) => {
@@ -373,3 +372,127 @@ Finally, we can add the checkbox to our component's template:
 ```
 
 Build the app and play around with changing the checkbox and putting the app in the background. In most applications, you would leave this value set by default. If you were going to change it, you would most likely do so on startup and leave it that way.
+
+## Using Different Vault Types
+
+The mechanism used to unlock the vault is determined by a combination of the `type` and the `deviceSecurityType` configuration settings. The `type` can be any of the following:
+
+- `SecureStorage`: Securely store the data in the keychain, but do not lock it.
+- `DeviceSecurity`: When the vault is locked, it needs to be unlocked by a mechanism provided by the device.
+- `CustomPasscode`: When the vault is locked, it needs to be unlocked via a custom method provided by the application. This is typically done in the form of a custom PIN dialog.
+- `InMemory`: The data is never persisted. As a result, if the application is locked or restarted, the data is gone.
+
+In addition to these types, if `DeviceSecurity` is used, it is further refined by the `deviceSecurityType`, which can be any of the following values:
+
+- `Biometrics`: Use the biometric authentication type specified by the device.
+- `SystemPasscode`: Use the system passcode entry screen.
+- `Both`: Use `Biometrics` with the `SystemPasscode` as a backup when `Biometrics` fails.
+
+We specified `SecureStorage` when we set up the vault:
+
+```typescript
+const config = {
+  key: "io.ionic.getstartedivreact",
+  type: "SecureStorage" as any,
+  deviceSecurityType: "SystemPasscode" as any,
+  lockAfterBackgrounded: 2000,
+  shouldClearVaultAfterTooManyFailedAttempts: true,
+  customPasscodeInvalidUnlockAttempts: 2,
+  unlockVaultOnLoad: false,
+};
+```
+
+However, we can use the vault's `updateConfig()` method to change this at run time.
+
+In our application, we don't want to use every possible combination. Rather than exposing the raw `type` and `deviceSecurityType` values to the rest of the application, let's define the types of authentication we _do_ want to support:
+
+- `NoLocking`: We want to store the session data securely, but never lock it.
+- `Biometrics`: We want to use the device's biometric mechanism to unlock the vault when it is locked.
+- `SystemPasscode`: We want to use the device's passcode screen (typically a PIN or pattern) to unlock the vault when it is locked.
+
+Now we have the types defined within the domain of our application. The only code within our application that will have to worry about what this means within the context of the Identity Vault configuration is our `useVault()` hook.
+
+First, add a stateful property to `src/hooks/useVault.ts` just like the other ones that exist.
+
+```typescript
+const [lockType, setLockType] =
+  useState<"NoLocking" | "Biometrics" | "SystemPasscode">("NoLocking");
+```
+
+Return both the property and it's setter as part of the object returned by `useVault()`.
+
+Next, we will need a `useEffect()` that listens to changes made to `lockType` and updates the configuration accordingly.
+
+```typescript
+useEffect(() => {
+  let type: "SecureStorage" | "DeviceSecurity";
+  let deviceSecurityType: "SystemPasscode" | "Biometrics";
+
+  switch (lockType) {
+    case "Biometrics":
+      type = "DeviceSecurity";
+      deviceSecurityType = "Biometrics";
+      break;
+    case "SystemPasscode":
+      type = "DeviceSecurity";
+      deviceSecurityType = "SystemPasscode";
+      break;
+    default:
+      type = "SecureStorage";
+      deviceSecurityType = "SystemPasscode";
+      break;
+  }
+
+  config = { ...config, type, deviceSecurityType };
+  vault.updateConfig(config);
+}, [lockType, vault]);
+```
+
+**Note:** When this code is added, you will need to change the `config` declaration from a `const` to a `let`.
+
+We can now add a group of radio buttons to our `Home` component that will control the vault type. Remember to import any new components we are using.
+
+```JSX
+<IonRadioGroup
+  value={lockType}
+  onIonChange={(e) => setLockType(e.detail.value!)}
+>
+  <IonListHeader>
+    <IonLabel>Vault Locking Mechanism</IonLabel>
+  </IonListHeader>
+  <IonItem>
+    <IonLabel>Do Not Lock</IonLabel>
+    <IonRadio value="NoLocking" />
+  </IonItem>
+  <IonItem>
+    <IonLabel>Use Biometrics</IonLabel>
+    <IonRadio disabled={!canUseBiometrics} value="Biometrics" />
+  </IonItem>
+  <IonItem>
+    <IonLabel>Use System Passcode</IonLabel>
+    <IonRadio value="SystemPasscode" />
+  </IonItem>
+</IonRadioGroup>
+```
+
+Notice for the "Use Biometrics" radio button, we are disabling it based on a `canUseBiometrics` value. We will need to code for that. First add a state property called `canUseBiometrics`, then update the `useEffect`.
+
+```Typescript
+const [canUseBiometrics, setCanUseBiometrics] = useState<boolean>(false);
+```
+
+```Typescript
+useEffect(() => {
+  (async () => {
+    const isPrivacyScreenEnabled =
+      await Device.isHideScreenOnBackgroundEnabled();
+    setPrivacyScreen(isPrivacyScreenEnabled);
+    const isBiometricsEnabled = await Device.isBiometricsEnabled();
+    setCanUseBiometrics(isBiometricsEnabled);
+  })();
+}, []);
+```
+
+One final bit of housekeeping before building and running the application: if you are using an iOS device you need to open the `Info.plist` file and add the `NSFaceIDUsageDescription` key with a value like "Use Face ID to unlock the vault when it is locked."
+
+Now when you run the app, you can choose a different locking mechanism and it should be used whenever you need to unlock the vault.
