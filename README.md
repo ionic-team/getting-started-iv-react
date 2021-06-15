@@ -323,3 +323,53 @@ Build and run the application now. When the user clicks the "Lock Vault" button,
 In that last case, you didn't have to do anything to unlock the vault. That is because we are not using a type of vault that actually locks. As a matter of fact, with the `SecureStorage` type of vault, the vault will not automatically lock while the application is in the background.
 
 In a few sections we will explore different vault types further. But first we will begin exploring the `Device` API.
+
+## The `Device` API
+
+Identity Vault allows you to have multiple vaults within your application. However, there are some capabilities that Identity Vault allows you to control that are applicable to the device that the application is running on rather than being applicable to any given vault. For these items, we will use Identity Vault's `Device` API.
+
+One such item is the "privacy screen". When an application is put into the background, the default behavior is for the OS to take a screenshot of the current page and display that as the user scrolls through the open applications. However, if your application displays sensitive information you may not want that information displayed at such a time. So, another option is to display the splash screen (on iOS) or a plain rectangle (on Android) instead of the screenshot. This is often referred to as a "privacy screen".
+
+We will use the `Device.isHideScreenOnBackgroundEnabled()` method to determine if our application will currently display the privacy screen or not. We will then use the `Device.setHideScreenOnBackground()` method to control whether it is displayed or not. Finally, we will hook that all up to a checkbox in the UI to allow the user to manipulate the value at run time.
+
+All of the following code applies to the `src/pages/Home.tsx` file.
+
+First, import the `Device` API:
+
+```typescript
+import { Device } from "@ionic-enterprise/identity-vault";
+```
+
+Then add the following code to the `Home` component:
+
+```Typescript
+const [privacyScreen, setPrivacyScreen] = useState<boolean>(false);
+
+useEffect(() => {
+  const isPrivacyScreenEnabled = async () => {
+    const isPrivacyScreenEnabled =
+      await Device.isHideScreenOnBackgroundEnabled();
+    setPrivacyScreen(isPrivacyScreenEnabled);
+  };
+  isPrivacyScreenEnabled();
+}, []);
+
+const handlePrivacyScreenChanged = (evt: { detail: { checked: boolean } }) => {
+  Device.setHideScreenOnBackground(evt.detail.checked);
+  setPrivacyScreen(evt.detail.checked);
+};
+```
+
+Finally, we can add the checkbox to our component's template:
+
+```JSX
+<IonItem>
+  <IonLabel>Use Privacy Screen</IonLabel>
+  <IonCheckbox
+    value={privacyScreen.toString()}
+    onIonChange={(e) => handlePrivacyScreenChanged(e)}
+  />
+</IonItem>
+```
+
+Build the app and play around with changing the checkbox and putting the app in the background. In most applications, you would leave this value set by default. If you were going to change it, you would most likely do so on startup and leave it that way.

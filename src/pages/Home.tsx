@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   IonButton,
+  IonCheckbox,
   IonContent,
   IonHeader,
   IonInput,
@@ -11,6 +12,7 @@ import {
   IonTitle,
   IonToolbar,
 } from "@ionic/react";
+import { Device } from "@ionic-enterprise/identity-vault";
 import "./Home.css";
 import { useVault } from "../hooks/useVault";
 
@@ -24,6 +26,23 @@ const Home: React.FC = () => {
     vaultIsLocked,
   } = useVault();
   const [data, setData] = useState<string>("");
+  const [privacyScreen, setPrivacyScreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const isPrivacyScreenEnabled = async () => {
+      const isPrivacyScreenEnabled =
+        await Device.isHideScreenOnBackgroundEnabled();
+      setPrivacyScreen(isPrivacyScreenEnabled);
+    };
+    isPrivacyScreenEnabled();
+  }, []);
+
+  const handlePrivacyScreenChanged = (evt: {
+    detail: { checked: boolean };
+  }) => {
+    Device.setHideScreenOnBackground(evt.detail.checked);
+    setPrivacyScreen(evt.detail.checked);
+  };
 
   return (
     <IonPage>
@@ -80,6 +99,13 @@ const Home: React.FC = () => {
                 Unlock Vault
               </IonButton>
             </IonLabel>
+          </IonItem>
+          <IonItem>
+            <IonLabel>Use Privacy Screen</IonLabel>
+            <IonCheckbox
+              value={privacyScreen.toString()}
+              onIonChange={(e) => handlePrivacyScreenChanged(e)}
+            />
           </IonItem>
         </IonList>
       </IonContent>
