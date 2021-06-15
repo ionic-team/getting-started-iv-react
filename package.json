@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "@capacitor/android": "3.0.1",
     "@capacitor/app": "1.0.1",
     "@capacitor/core": "3.0.1",
     "@capacitor/haptics": "1.0.1",
@@ -42,7 +43,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && cap copy",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
