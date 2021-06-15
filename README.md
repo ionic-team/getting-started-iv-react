@@ -224,3 +224,102 @@ export default Home;
 ```
 
 **Note:** As we continue with this tutorial, we will just provide the new markup or code that is required. It is up to you to make sure that the correct imports and component definitions are added.
+
+## Locking and Unlocking the Vault
+
+Now that we are storing data in the vault, it would be helpful to lock and unlock that data. The vault will automatically lock after `lockAfterBackgrounded` milliseconds of the application being in the background. We can also lock the vault manually if we so desire.
+
+Add the following code to the `useVault()` hook:
+
+```TypeScript
+const lockVault = () => {
+  vault.lock();
+};
+
+const unlockVault = () => {
+  vault.unlock();
+}
+```
+
+Remember to return the references to the functions:
+
+```TypeScript
+return {
+  session: sessionValue,
+
+  lockVault,
+  unlockVault,
+
+  setSession,
+  restoreSession,
+};
+```
+
+We can then add a couple of buttons to our `Home.tsx` component file:
+
+```JSX
+<IonItem>
+  <IonLabel>
+    <IonButton expand="block" onClick={() => lockVault()}>
+      Lock Vault
+    </IonButton>
+  </IonLabel>
+</IonItem>
+
+<IonItem>
+  <IonLabel>
+    <IonButton expand="block" onClick={() => unlockVault()}>
+      Unlock Vault
+    </IonButton>
+  </IonLabel>
+</IonItem>
+```
+
+We can now lock and unlock the vault, though in our current case we cannot really tell. Our application should react in some way when the vault is locked. For example, we may want to clear specific data from memory. We may also wish to redirect to a page that will only allow the user to proceed if they unlock the vault. In our case, we will just clear the `session` and have a flag that we can use to visually indicate if the vault is locked or not. We can do that by using the vault's `onLock` event.
+
+Add the following code to `src/hooks/useVault.ts`, inside the `useMemo()` function:
+
+```TypeScript
+vault.onLock(() => {
+  setVaultIsLocked(true);
+  setSessionValue("");
+});
+
+vault.onUnlock(() => setVaultIsLocked(false));
+```
+
+Declare and return a state variable `vaultIsLocked` outside of the `useMemo()` function:
+
+```TypeScript
+const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
+
+...snip...
+
+return {
+  session: sessionValue,
+  vaultIsLocked,
+
+  lockVault,
+  unlockVault,
+
+  setSession,
+  restoreSession,
+};
+```
+
+Then update `Home.tsx` to display the `vaultIsLocked` value along with the session.
+
+```JSX
+<IonItem>
+  <IonLabel>
+    <div>Session Data: {session}</div>
+    <div>Vault is Locked: {vaultIsLocked.toString()}</div>
+  </IonLabel>
+</IonItem>
+```
+
+Build and run the application now. When the user clicks the "Lock Vault" button, the "Session Data" will be cleared out and the "Vault is Locked" will show as true. Clicking "Unlock Vault" will cause "Vault is Locked" to show as false again. Notice that you can lock the vault then unlock it and get the session data back by clicking "Restore Session Data".
+
+In that last case, you didn't have to do anything to unlock the vault. That is because we are not using a type of vault that actually locks. As a matter of fact, with the `SecureStorage` type of vault, the vault will not automatically lock while the application is in the background.
+
+In a few sections we will explore different vault types further. But first we will begin exploring the `Device` API.

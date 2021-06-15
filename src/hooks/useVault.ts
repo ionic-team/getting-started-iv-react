@@ -15,9 +15,18 @@ const key = "sessionData";
 
 export const useVault = () => {
   const [sessionValue, setSessionValue] = useState<string>("");
+  const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
 
   const vault = useMemo(() => {
     const vault = new Vault(config);
+
+    vault.onLock(() => {
+      setVaultIsLocked(true);
+      setSessionValue("");
+    });
+
+    vault.onUnlock(() => setVaultIsLocked(false));
+
     return vault;
   }, []);
 
@@ -31,5 +40,22 @@ export const useVault = () => {
     setSessionValue(value);
   };
 
-  return { session: sessionValue, setSession, restoreSession };
+  const lockVault = () => {
+    vault.lock();
+  };
+
+  const unlockVault = () => {
+    vault.unlock();
+  };
+
+  return {
+    session: sessionValue,
+    vaultIsLocked,
+
+    lockVault,
+    unlockVault,
+
+    setSession,
+    restoreSession,
+  };
 };

@@ -15,7 +15,14 @@ import "./Home.css";
 import { useVault } from "../hooks/useVault";
 
 const Home: React.FC = () => {
-  const { session, setSession, restoreSession } = useVault();
+  const {
+    session,
+    setSession,
+    restoreSession,
+    lockVault,
+    unlockVault,
+    vaultIsLocked,
+  } = useVault();
   const [data, setData] = useState<string>("");
 
   return (
@@ -55,7 +62,24 @@ const Home: React.FC = () => {
             </IonLabel>
           </IonItem>
           <IonItem>
-            <IonLabel>Session Data: {session}</IonLabel>
+            <IonLabel>
+              <div>Session Data: {session}</div>
+              <div>Vault is Locked: {vaultIsLocked.toString()}</div>
+            </IonLabel>
+          </IonItem>
+          <IonItem>
+            <IonLabel>
+              <IonButton expand="block" onClick={() => lockVault()}>
+                Lock Vault
+              </IonButton>
+            </IonLabel>
+          </IonItem>
+          <IonItem>
+            <IonLabel>
+              <IonButton expand="block" onClick={() => unlockVault()}>
+                Unlock Vault
+              </IonButton>
+            </IonLabel>
           </IonItem>
         </IonList>
       </IonContent>
