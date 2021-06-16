@@ -496,3 +496,60 @@ useEffect(() => {
 One final bit of housekeeping before building and running the application: if you are using an iOS device you need to open the `Info.plist` file and add the `NSFaceIDUsageDescription` key with a value like "Use Face ID to unlock the vault when it is locked."
 
 Now when you run the app, you can choose a different locking mechanism and it should be used whenever you need to unlock the vault.
+
+## Clear the Vault
+
+One last method we will explore before we finish is the `clear()` method. The `clear()` API method will remove all items from the vault and then remove the vault itself.
+
+To show this in action, let's add a `vaultExists` state property to our `src/hooks/useVault.ts` file. Return it from the `useVault()` hook so we can use it in our components.
+
+```typescript
+const [vaultExists, setVaultExists] = useState<boolean>(false);
+```
+
+Then add a `clearVault()` function within the `useVault()` hook. This function will call `vault.clear()`, reset the `lockType` to `NoLocking`, and clear our session data cache.
+
+```typescript
+const clearVault = async () => {
+  await vault.clear();
+  setLockType("NoLocking");
+  setSession("");
+};
+```
+
+Remember to add it to the return from `useVault()` as well.
+
+In order to see when a vault does and does not exist, let's add the following statement to a couple of places:
+
+```typescript
+setVaultExists(await vault.doesVaultExist());
+```
+
+Add a call in `clearVault()` as well as `setSession()`. Let's also add a call within the `useMemo()` function where we instantiate the vault itself; but since that function is not `async` we need to use "promise then" syntax there:
+
+```typescript
+const vault = useMemo(() => {
+  const vault = new Vault(config);
+  vault.doesVaultExist().then((res) => setVaultExists(res));
+
+  vault.onLock(() => {
+    setVaultIsLocked(true);
+    setSessionValue("");
+  });
+
+  vault.onUnlock(() => setVaultIsLocked(false));
+
+  return vault;
+}, []);
+```
+
+With that in place, open the `Home.tsx` file and do the following:
+
+- Add a button to clear the vault by calling `clearVault()` on click
+- Display the current value of `vaultExists` in a `div` just like we are currently showing `session` and `vaultIsLocked`
+
+## Conclusion
+
+This walk-through has implemented using Identity Vault in a very manual manner, allowing for a lot of user interaction with the vault. In an actual application, a lot of this functionality would instead be a part of several programmatic workflows within the application.
+
+At this point, you should have a good idea of how Identity Vault works. There is still more functionality that can be implemented. Be sure to check out our How To documentation to determine how to facilitate specific areas of functionality within your application.

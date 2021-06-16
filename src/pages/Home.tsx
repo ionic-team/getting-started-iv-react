@@ -29,6 +29,8 @@ const Home: React.FC = () => {
     vaultIsLocked,
     lockType,
     setLockType,
+    clearVault,
+    vaultExists,
   } = useVault();
   const [data, setData] = useState<string>("");
   const [privacyScreen, setPrivacyScreen] = useState<boolean>(false);
@@ -91,6 +93,7 @@ const Home: React.FC = () => {
             <IonLabel>
               <div>Session Data: {session}</div>
               <div>Vault is Locked: {vaultIsLocked.toString()}</div>
+              <div>Vault Exists: {vaultExists.toString()}</div>
             </IonLabel>
           </IonItem>
           <IonItem>
@@ -104,6 +107,13 @@ const Home: React.FC = () => {
             <IonLabel>
               <IonButton expand="block" onClick={() => unlockVault()}>
                 Unlock Vault
+              </IonButton>
+            </IonLabel>
+          </IonItem>
+          <IonItem>
+            <IonLabel>
+              <IonButton expand="block" onClick={() => clearVault()}>
+                Clear Vault
               </IonButton>
             </IonLabel>
           </IonItem>
