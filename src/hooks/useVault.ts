@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Vault } from "@ionic-enterprise/identity-vault";
+import { DeviceSecurityType, IdentityVaultConfig,  Vault, VaultType } from "@ionic-enterprise/identity-vault";
 
-let config = {
+let config: IdentityVaultConfig = {
   key: "io.ionic.getstartedivreact",
-  type: "SecureStorage" as any,
-  deviceSecurityType: "SystemPasscode" as any,
+  type: "SecureStorage",
+  deviceSecurityType: "SystemPasscode",
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
@@ -35,8 +35,8 @@ export const useVault = () => {
   }, []);
 
   useEffect(() => {
-    let type: "SecureStorage" | "DeviceSecurity";
-    let deviceSecurityType: "SystemPasscode" | "Biometrics";
+    let type: VaultType;
+    let deviceSecurityType: DeviceSecurityType;
 
     switch (lockType) {
       case "Biometrics":

@@ -2,7 +2,7 @@
 
 This application walks through the basic setup and use of <a href="https://ionic.io/products/identity-vault" target="_blank">Ionic's Identity Vault</a> in an `@ionic/react` application. Rather than connecting to a back end service and storing user session data this application will just store information that you type in and tell it to store. Almost all of the work done here will be concentrated on a couple of files:
 
-- `src/hooks/useVault.ts`: A composition API function that abstracts the logic associated with using Identity Vault. The functions and state exported here model what might be done in a real application.
+- `src/hooks/useVault.ts`: A hook that abstracts the logic associated with using Identity Vault. The functions and state exported here model what might be done in a real application.
 - `src/pages/Home.tsx`: The main view will have several form controls that allow the user to manipulate the vault. An application would not typically do this. Rather, it would call the methods from `useVault()` within various workflows. In this "getting started" demo application, however, this allows us to easily play around with the various APIs to see how they behave.
 
 ## Generate the Application
@@ -52,7 +52,7 @@ Finally, in order to ensure that the web application bundle is copied over each 
 In order to install Identity Vault you will need to use `ionic enterprise register` in order to register your product key. This will create a `.npmrc` file containing the product key. If you have already performed that step for your production application, you can just copy the `.npmrc` file from your production project. Since this application is for learning purposes only, you don't need to obtain another key. You can then install Identity Vault.
 
 ```bash
-npm install @ionic-enterprise/identity-vault
+npm install @ionic-enterprise/identity-vault@next
 ```
 
 ## Create the Vault
@@ -63,12 +63,12 @@ First, create a file named `src/hooks/useVault.ts`. Within this file we will cre
 
 ```TypeScript
 import { useMemo, useState } from "react";
-import { Vault } from "@ionic-enterprise/identity-vault";
+import { IdentityVaultConfig, Vault } from "@ionic-enterprise/identity-vault";
 
-const config = {
+const config: IdentityVaultConfig = {
   key: "io.ionic.getstartedivreact",
-  type: "SecureStorage" as any,
-  deviceSecurityType: "SystemPasscode" as any,
+  type: "SecureStorage",
+  deviceSecurityType: "SystemPasscode",
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
@@ -102,10 +102,10 @@ export const useVault = () => {
 Let's look at this file section by section. The first thing we do is define a configuration for our vault. The `key` gives the vault a name. The other properties provide a default behavior for our vault - and as we shall see later - can be changed as we use the vault.
 
 ```TypeScript
-const config = {
+const config: IdentityVaultConfig = {
   key: "io.ionic.getstartedivreact",
-  type: "SecureStorage" as any,
-  deviceSecurityType: "SystemPasscode" as any,
+  type: "SecureStorage",
+  deviceSecurityType: "SystemPasscode",
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
@@ -144,9 +144,9 @@ export const useVault = () => {
 };
 ```
 
-**Note:** Rather than create functions such as `setSession()` and `restoreSession()`, we _could_ just return the `vault` from the hook and use its API directly in the rest of the application. However, that would expose the rest of the application to potential API changes as well as potentially result in duplicated code. In my opinion, it is a much better option to return functions that define how I would like the rest of the application to interact with the vault. This makes the code more maintainable and easier to debug.
+**Note:** Rather than create functions such as `setSession()` and `restoreSession()`, we _could_ just return the `vault` from the hook and use its API directly in the rest of the application. However, that would expose the rest of the application to potential API changes as well as potentially result in duplicated code. In our opinion, it is a much better option to return functions that define how I would like the rest of the application to interact with the vault. This makes the code more maintainable and easier to debug.
 
-Now that we have the vault in place, let's switch over to `src/pages/Home.tsx` and code some simple interactions with the vault. Here is a snapshot of what we will change:
+Now that we have the vault in place, let's switch over to `src/pages/Home.tsx` and implement some simple interactions with the vault. Here is a snapshot of what we will change:
 
 1. Replace the `<ExploreContainer />` with a list of form controls
 2. Import and make use of the `useVault()` hook
@@ -224,6 +224,8 @@ export default Home;
 ```
 
 **Note:** As we continue with this tutorial, we will just provide the new markup or code that is required. It is up to you to make sure that the correct imports and component definitions are added.
+
+Build this and run it on your device(s). You should be able to enter some data and store it in the vault by clicking "Set Session Data." If you then shutdown the app and start it again, you should be able to restore it using "Restore Session Data."
 
 ## Locking and Unlocking the Vault
 
@@ -365,7 +367,7 @@ Finally, we can add the checkbox to our component's template:
 <IonItem>
   <IonLabel>Use Privacy Screen</IonLabel>
   <IonCheckbox
-    value={privacyScreen.toString()}
+    checked={privacyScreen}
     onIonChange={(e) => handlePrivacyScreenChanged(e)}
   />
 </IonItem>
@@ -391,10 +393,10 @@ In addition to these types, if `DeviceSecurity` is used, it is further refined b
 We specified `SecureStorage` when we set up the vault:
 
 ```typescript
-const config = {
+const config: IdentityVaultConfig = {
   key: "io.ionic.getstartedivreact",
-  type: "SecureStorage" as any,
-  deviceSecurityType: "SystemPasscode" as any,
+  type: "SecureStorage",
+  deviceSecurityType: "SystemPasscode",
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
@@ -425,8 +427,8 @@ Next, we will need a `useEffect()` that listens to changes made to `lockType` an
 
 ```typescript
 useEffect(() => {
-  let type: "SecureStorage" | "DeviceSecurity";
-  let deviceSecurityType: "SystemPasscode" | "Biometrics";
+  let type: VaultType;
+  let deviceSecurityType: DeviceSecurityType;
 
   switch (lockType) {
     case "Biometrics":
@@ -449,6 +451,8 @@ useEffect(() => {
 ```
 
 **Note:** When this code is added, you will need to change the `config` declaration from a `const` to a `let`.
+
+Also, be sure to import `VaultType` and `DeviceSecurityType` from `@ionic-enterprise/identity-vault`.
 
 We can now add a group of radio buttons to our `Home` component that will control the vault type. Remember to import any new components we are using.
 

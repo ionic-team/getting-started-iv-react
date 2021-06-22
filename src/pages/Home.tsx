@@ -120,7 +120,7 @@ const Home: React.FC = () => {
           <IonItem>
             <IonLabel>Use Privacy Screen</IonLabel>
             <IonCheckbox
-              value={privacyScreen.toString()}
+              checked={privacyScreen}
               onIonChange={(e) => handlePrivacyScreenChanged(e)}
             />
           </IonItem>
