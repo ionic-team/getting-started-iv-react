@@ -17,7 +17,7 @@ export const useVault = () => {
   const [sessionValue, setSessionValue] = useState<string>("");
   const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
   const [lockType, setLockType] =
-    useState<"NoLocking" | "Biometrics" | "SystemPasscode">("NoLocking");
+    useState<"NoLocking" | "Biometrics" | "SystemPasscode" | undefined>(undefined);
   const [vaultExists, setVaultExists] = useState<boolean>(false);
 
   const vault = useMemo(() => {
@@ -38,23 +38,25 @@ export const useVault = () => {
     let type: VaultType;
     let deviceSecurityType: DeviceSecurityType;
 
-    switch (lockType) {
-      case "Biometrics":
-        type = "DeviceSecurity";
-        deviceSecurityType = "Biometrics";
-        break;
-      case "SystemPasscode":
-        type = "DeviceSecurity";
-        deviceSecurityType = "SystemPasscode";
-        break;
-      default:
-        type = "SecureStorage";
-        deviceSecurityType = "SystemPasscode";
-        break;
-    }
+    if (lockType) {
+      switch (lockType) {
+        case "Biometrics":
+          type = "DeviceSecurity";
+          deviceSecurityType = "Biometrics";
+          break;
+        case "SystemPasscode":
+          type = "DeviceSecurity";
+          deviceSecurityType = "SystemPasscode";
+          break;
+        default:
+          type = "SecureStorage";
+          deviceSecurityType = "SystemPasscode";
+          break;
+      }
 
-    config = { ...config, type, deviceSecurityType };
-    vault.updateConfig(config);
+      config = { ...config, type, deviceSecurityType };
+      vault.updateConfig(config);
+    }
   }, [lockType, vault]);
 
   const setSession = async (value: string): Promise<void> => {

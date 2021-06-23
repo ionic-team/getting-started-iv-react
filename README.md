@@ -418,7 +418,7 @@ First, add a stateful property to `src/hooks/useVault.ts` just like the other on
 
 ```typescript
 const [lockType, setLockType] =
-  useState<"NoLocking" | "Biometrics" | "SystemPasscode">("NoLocking");
+  useState<"NoLocking" | "Biometrics" | "SystemPasscode" | undefined>(undefined);
 ```
 
 Return both the property and it's setter as part of the object returned by `useVault()`.
@@ -430,23 +430,25 @@ useEffect(() => {
   let type: VaultType;
   let deviceSecurityType: DeviceSecurityType;
 
-  switch (lockType) {
-    case "Biometrics":
-      type = "DeviceSecurity";
-      deviceSecurityType = "Biometrics";
-      break;
-    case "SystemPasscode":
-      type = "DeviceSecurity";
-      deviceSecurityType = "SystemPasscode";
-      break;
-    default:
-      type = "SecureStorage";
-      deviceSecurityType = "SystemPasscode";
-      break;
-  }
+  if (lockType) {
+    switch (lockType) {
+      case "Biometrics":
+        type = "DeviceSecurity";
+        deviceSecurityType = "Biometrics";
+        break;
+      case "SystemPasscode":
+        type = "DeviceSecurity";
+        deviceSecurityType = "SystemPasscode";
+        break;
+      default:
+        type = "SecureStorage";
+        deviceSecurityType = "SystemPasscode";
+        break;
+    }
 
-  config = { ...config, type, deviceSecurityType };
-  vault.updateConfig(config);
+    config = { ...config, type, deviceSecurityType };
+    vault.updateConfig(config);
+  }
 }, [lockType, vault]);
 ```
 
