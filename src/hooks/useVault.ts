@@ -44,6 +44,7 @@ export const useVault = () => {
   const [session, setSession] = useState<string | undefined>(undefined);
   const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
   const [lockType, setLockType] = useState<LockType>(undefined);
+  const [vaultExists, setVaultExists] = useState<boolean>(false);
 
   const vault = useMemo(() => {
     const vault =
@@ -58,7 +59,8 @@ export const useVault = () => {
 
     vault.onUnlock(() => setVaultIsLocked(false));
 
-    console.log(vault.config);
+    vault.isLocked().then(setVaultIsLocked);
+    vault.doesVaultExist().then(setVaultExists);
 
     return vault;
   }, []);
@@ -73,6 +75,8 @@ export const useVault = () => {
   const storeSession = async (value: string): Promise<void> => {
     setSession(value);
     await vault.setValue(key, value);
+    const exists = await vault.doesVaultExist();
+    setVaultExists(exists);
   };
 
   const restoreSession = async (): Promise<void> => {
@@ -88,6 +92,14 @@ export const useVault = () => {
     await vault.unlock();
   };
 
+  const clearVault = async (): Promise<void> => {
+    await vault.clear();
+    setLockType('NoLocking');
+    setSession(undefined);
+    const exists = await vault.doesVaultExist();
+    setVaultExists(exists);
+  };
+
   return {
     session,
     vaultIsLocked,
@@ -100,5 +112,8 @@ export const useVault = () => {
 
     lockType,
     setLockType,
+
+    vaultExists,
+    clearVault,
   };
 };

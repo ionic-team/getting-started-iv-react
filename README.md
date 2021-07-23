@@ -156,7 +156,7 @@ export const useVault = () => {
 };
 ```
 
-:::note::: It is recommend to abstract vault functionality into functions that defines how the rest of the application should interact with the vault instead of directly returning the `vault` instance. This results in more maintainable and debuggable code, while preventing the rest of the code from being exposed to potential API changes and duplicated code.
+:::note::: It's recommended to abstract vault functionality into functions that define how the rest of the application should interact with the vault instead of directly returning the `vault` instance. This creates more maintainable and debuggable code, while preventing the rest of the code from being exposed to potential API changes and reduces the chance of duplicating code.
 
 Now that we have the vault in place, let's switch over to `src/pages/Home.tsx` and implement some simple interactions with the vault. Here is a snapshot of what we will change:
 
@@ -241,7 +241,7 @@ const Home: React.FC = () => {
 export default Home;
 ```
 
-**Note:** As we continue with this tutorial, we will just provide the new markup or code that is required. It is up to you to make sure that the correct imports and component definitions are added.
+:::note::: Throughout the rest of this guide only new markup or required code will be provided. It is up to you to make sure that the correct imports and component definitions are added.
 
 Build this and run it on your device(s). You should be able to enter some data and store it in the vault by clicking "Set Session Data." If you then shutdown the app and start it again, you should be able to restore it using "Restore Session Data."
 
@@ -349,11 +349,11 @@ Then update `Home.tsx` to display the `vaultIsLocked` value along with the sessi
 </IonItem>
 ```
 
-Build and run the application now. When the user clicks the "Lock Vault" button, the "Session Data" will be cleared out and the "Vault is Locked" will show as true. Clicking "Unlock Vault" will cause "Vault is Locked" to show as false again. Notice that you can lock the vault then unlock it and get the session data back by clicking "Restore Session Data".
+When the user presses the "Lock Vault" button, the "Session Data" will be cleared out and the "Vault is Locked" will show as true. Pressing "Unlock Vault" will cause "Vault is Locked" to show as false again. Pressing "Restore Session Data" will both unlock a vault and get the session data back.
 
-In that last case, you didn't have to do anything to unlock the vault. That is because we are not using a type of vault that actually locks. As a matter of fact, with the `SecureStorage` type of vault, the vault will not automatically lock while the application is in the background.
+:::note::: Vaults created with the `SecureStorage` vault type _do not_ lock. Data stored within this type of vault are still encrypted at rest and can be restored between sessions.
 
-In a few sections we will explore different vault types further. But first we will begin exploring the `Device` API.
+In a few sections we will explore different vault types further, allowing us to test the ability to lock and unlock a vault. First, we will begin exploring the `Device` API.
 
 ## The `Device` API
 
@@ -416,7 +416,9 @@ Build the app and play around with changing the checkbox and putting the app in 
 
 ## Using Different Vault Types
 
-The mechanism used to unlock the vault is determined by a combination of the `type` and the `deviceSecurityType` configuration settings. The `type` can be any of the following:
+The mechanism used to unlock the vault is determined by a combination of the `type` and the `deviceSecurityType` configuration settings.
+
+The `type` can be any of the following:
 
 - `SecureStorage`: Securely store the data in the keychain, but do not lock it.
 - `DeviceSecurity`: When the vault is locked, it needs to be unlocked by a mechanism provided by the device.
@@ -444,7 +446,7 @@ const config: IdentityVaultConfig = {
 
 However, we can use the vault's `updateConfig()` method to change this at run time.
 
-In our application, we don't want to use every possible combination. Rather than exposing the raw `type` and `deviceSecurityType` values to the rest of the application, let's define the types of authentication we _do_ want to support:
+In our application, we don't want to use every possible combination. Rather than exposing the raw `type` and `deviceSecurityType` values to the rest of the application, let's define the types of authorization we _do_ want to support:
 
 - `NoLocking`: We want to store the session data securely, but never lock it.
 - `Biometrics`: We want to use the device's biometric mechanism to unlock the vault when it is locked.
@@ -452,7 +454,7 @@ In our application, we don't want to use every possible combination. Rather than
 
 Now we have the types defined within the domain of our application. The only code within our application that will have to worry about what this means within the context of the Identity Vault configuration is our `useVault()` hook.
 
-First, add a function to `src/hooks/useVault.ts` that will return Identity Vault configuration changes that correspond to each of our domain lock types. This function will reside outside of the `useVault()` definition:
+First, we will create a helper function in `src/hooks/useVault.ts` that takes in one of our application's types and returns the corresponding `VaultType` and `DeviceSecurityType`. This function will reside outside of the `useVault()` definition:
 
 ```TypeScript
 type LockType = 'NoLocking' | 'Biometrics' | 'SystemPasscode' | undefined;
@@ -478,21 +480,7 @@ const getConfigUpdates = (lockType: LockType) => {
 };
 ```
 
-Next, add a stateful property to `useVault()` to manage the vault's lock type:
-
-```TypeScript
-
-```
-
----
-
-First, add a custom type to `src/hooks/useVault.ts` outside of the hook definition:
-
-```Typescript
-const [lockType, setLockType] = useState<LockType>(undefined);
-```
-
-Next, add a stateful property to `useVault()` to contain the vault's lock type:
+Next, add a state property to `useVault()` just like the other ones that exist:
 
 ```TypeScript
 const [lockType, setLockType] = useState<LockType>(undefined);
@@ -500,49 +488,23 @@ const [lockType, setLockType] = useState<LockType>(undefined);
 
 Return both the property and it's setter as part of the object returned by `useVault()`.
 
-Then, we will need to watch for changes and update the
+We will want a way to watch for changes to `lockType` so that when it changes we can update the vault configuration accordingly. Let's do so by adding a `useEffect()` to the hook:
 
----
-
-Next, we will need a `useEffect()` that listens to changes made to `lockType` and updates the configuration accordingly.
-
-```typescript
+```TypeScript
 useEffect(() => {
-  let type: VaultType;
-  let deviceSecurityType: DeviceSecurityType;
-
   if (lockType) {
-    switch (lockType) {
-      case 'Biometrics':
-        type = 'DeviceSecurity';
-        deviceSecurityType = 'Biometrics';
-        break;
-      case 'SystemPasscode':
-        type = 'DeviceSecurity';
-        deviceSecurityType = 'SystemPasscode';
-        break;
-      default:
-        type = 'SecureStorage';
-        deviceSecurityType = 'SystemPasscode';
-        break;
-    }
-
-    config = { ...config, type, deviceSecurityType };
-    vault.updateConfig(config);
+    const { type, deviceSecurityType } = getConfigUpdates(lockType);
+    vault.updateConfig({ ...vault.config, type, deviceSecurityType });
   }
 }, [lockType, vault]);
 ```
 
-**Note:** When this code is added, you will need to change the `config` declaration from a `const` to a `let`.
-
-Also, be sure to import `VaultType` and `DeviceSecurityType` from `@ionic-enterprise/identity-vault`.
-
-We can now add a group of radio buttons to our `Home` component that will control the vault type. Remember to import any new components we are using.
+Finally, add a group of radio buttons to `src/pages/Home.tsx` that control the type of vault being used. Remember to import any new components being used:
 
 ```JSX
 <IonRadioGroup
   value={lockType}
-  onIonChange={(e) => setLockType(e.detail.value!)}
+  onIonChange={e => setLockType(e.detail.value!)}
 >
   <IonListHeader>
     <IonLabel>Vault Locking Mechanism</IonLabel>
@@ -557,86 +519,94 @@ We can now add a group of radio buttons to our `Home` component that will contro
   </IonItem>
   <IonItem>
     <IonLabel>Use System Passcode</IonLabel>
-    <IonRadio value="SystemPasscode" />
+    <IonRadio disabled={!canUseSystemPin} value="SystemPasscode" />
   </IonItem>
 </IonRadioGroup>
 ```
 
-Notice for the "Use Biometrics" radio button, we are disabling it based on a `canUseBiometrics` value. We will need to code for that. First add a state property called `canUseBiometrics`, then update the `useEffect`.
+The "Use Biometrics" and "Use System Passcode" radio buttons will be disabled on whether or not the feature has been enabled on the device. We will need to code for that by adding state properties and updating the `useEffect` in the component:
 
-```Typescript
+```TypeScript
+const [canUseSystemPin, setCanUseSystemPin] = useState<boolean>(false);
 const [canUseBiometrics, setCanUseBiometrics] = useState<boolean>(false);
-```
 
-```Typescript
 useEffect(() => {
-  (async () => {
-    const isPrivacyScreenEnabled =
-      await Device.isHideScreenOnBackgroundEnabled();
-    setPrivacyScreen(isPrivacyScreenEnabled);
-    const isBiometricsEnabled = await Device.isBiometricsEnabled();
-    setCanUseBiometrics(isBiometricsEnabled);
-  })();
+  if (isMobile) {
+    Device.isSystemPasscodeSet().then(setCanUseSystemPin);
+    Device.isBiometricsEnabled().then(setCanUseBiometrics);
+    ...
+  }
 }, []);
 ```
+
+Notice that we are using the `Device` API again to determine if biometrics is both: (a) supported by the current device, and (b) enabled by the device user. Users should not be able to choose that option unless biometrics are properly set up on the device.
 
 One final bit of housekeeping before building and running the application: if you are using an iOS device you need to open the `Info.plist` file and add the `NSFaceIDUsageDescription` key with a value like "Use Face ID to unlock the vault when it is locked."
 
 Now when you run the app, you can choose a different locking mechanism and it should be used whenever you need to unlock the vault.
 
-## Clear the Vault
+If you change the vault type to use either Biometrics or Session Passcode, you should see that the vault is still using that mode when you restart the application. If a vault already exists for a given key (such as `'io.ionic.getstartedivreact'`), the vault remembers which mode it is operating in and will ignore the mode passed into the constructor.
 
-One last method we will explore before we finish is the `clear()` method. The `clear()` API method will remove all items from the vault and then remove the vault itself.
+## Initialize the `vaultIsLocked` Flag
 
-To show this in action, let's add a `vaultExists` state property to our `src/hooks/useVault.ts` file. Return it from the `useVault()` hook so we can use it in our components.
+Now that the vault type can be set to modes that lock, the "Lock Vault" and "Unlock Vault" buttons are now testable. However, try the following set of instructions:
 
-```typescript
+1. Set some session data.
+2. Press either the "Use Biometrics" or "Use System Passcode" radio buttons.
+3. Close the application.
+4. Restart the application.
+5. Observe that "Vault is Locked" is shown as `false`.
+6. Press the "Restore Session Data" button.
+7. Observe the application request a security prompt.
+
+Clearly the vault was locked! Our flag is wrong because it's set to `false` on startup, and the `onLock` event does not trigger on startup. The `Vault` API provides a way to programmatically obtain the current lock status of the vault.
+
+Add the following line of code to `src/hooks/useVault.ts` immediately after the `onUnlock` event handler:
+
+```Typescript
+vault.isLocked().then(setVaultIsLocked);
+```
+
+Now when the application is restarted, the vault should be shown as locked.
+
+## Clearing the Vault
+
+In this final step, we will remove all items from the vault and then remove the vault itself. This can be achieved through the `Vault` API by calling the `clear()` method.
+
+To show this in action, add a `vaultExists` state property to the `useVault()` hook.
+
+```TypeScript
 const [vaultExists, setVaultExists] = useState<boolean>(false);
 ```
 
-Then add a `clearVault()` function within the `useVault()` hook. This function will call `vault.clear()`, reset the `lockType` to `NoLocking`, and clear our session data cache.
+Next, add a function named `clearVault()` within `useVault()`. This function will call `vault.clear()`, set the `lockType` to `NoLocking`, and clear our `session` state property:
 
-```typescript
-const clearVault = async () => {
+```TypeScript
+const clearVault = async (): Promise<void> => {
   await vault.clear();
   setLockType('NoLocking');
-  setSession('');
+  setSession(undefined);
 };
 ```
 
-Remember to add it to the return from `useVault()` as well.
+Don't forget to return `vaultExists` and `clearVault`.
 
-In order to see when a vault does and does not exist, let's add the following statement to a couple of places:
+In order to see when a vault does or does not exist, let's add the following code to `clearVault()` and `storeSession()`:
 
-```typescript
-setVaultExists(await vault.doesVaultExist());
+```TypeScript
+const exists = await vault.doesVaultExist();
+setVaultExists(exists);
 ```
 
-Add a call in `clearVault()` as well as `setSession()`. Let's also add a call within the `useMemo()` function where we instantiate the vault itself; but since that function is not `async` we need to use "promise then" syntax there:
+We should also add a call within the `useMemo()` code block to initialize the value along with the vault. Since that function is not `async` we need to use the "promise-then" syntax: `vault.doesVaultExist().then(setVaultExists)`;
 
-```typescript
-const vault = useMemo(() => {
-  const vault = new Vault(config);
-  vault.doesVaultExist().then(res => setVaultExists(res));
+Once that all is in place, make the following adjustments to `src/pages/Home.tsx`:
 
-  vault.onLock(() => {
-    setVaultIsLocked(true);
-    setSessionValue('');
-  });
-
-  vault.onUnlock(() => setVaultIsLocked(false));
-
-  return vault;
-}, []);
-```
-
-With that in place, open the `Home.tsx` file and do the following:
-
-- Add a button to clear the vault by calling `clearVault()` on click
-- Display the current value of `vaultExists` in a `div` just like we are currently showing `session` and `vaultIsLocked`
+- Add a button to clear the vault by calling `clearVault()` on click.
+- Display the current value of `vaultExists` in a `div` the same way `session` and `vaultIsLocked` are being shown.
 
 ## Conclusion
 
-This walk-through has implemented using Identity Vault in a very manual manner, allowing for a lot of user interaction with the vault. In an actual application, a lot of this functionality would instead be a part of several programmatic workflows within the application.
+This guide has implemented using Identity Vault in a very manual manner, allowing for a lot of user interaction with the vault. In an actual application, a lot of this functionality would instead be a part of several programmatic workflows within the application.
 
 At this point, you should have a good idea of how Identity Vault works. There is still more functionality that can be implemented. Be sure to check out our How To documentation to determine how to facilitate specific areas of functionality within your application.
