@@ -2,6 +2,7 @@
   "name": "getting-started-iv-react",
   "version": "0.0.1",
   "private": true,
+  "description": "Getting Started with Identity Vault",
   "dependencies": {
     "@capacitor/android": "3.0.1",
     "@capacitor/app": "1.0.1",
@@ -10,7 +11,7 @@
     "@capacitor/ios": "3.0.1",
     "@capacitor/keyboard": "1.0.1",
     "@capacitor/status-bar": "1.0.1",
-    "@ionic-enterprise/identity-vault": "~5.0.0-beta.0",
+    "@ionic-enterprise/identity-vault": "~5.0.0-dev-653e9c0.0",
     "@ionic/react": "^5.5.0",
     "@ionic/react-router": "^5.5.0",
     "@testing-library/jest-dom": "^5.11.9",
@@ -47,13 +48,20 @@
     "start": "react-scripts start",
     "build": "react-scripts build && cap copy",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint . --ext .ts,.tsx",
+    "postinstall": "husky install"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest"
-    ]
+      "react-app/jest",
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended"
+    ],
+    "rules": {
+      "react/prop-types": "off"
+    }
   },
   "browserslist": {
     "production": [
@@ -68,7 +76,11 @@
     ]
   },
   "devDependencies": {
-    "@capacitor/cli": "3.0.1"
+    "@capacitor/cli": "3.0.1",
+    "@ionic/prettier-config": "~1.0.1",
+    "husky": "~7.0.1",
+    "prettier": "~2.3.2",
+    "pretty-quick": "~3.1.1"
   },
-  "description": "An Ionic project"
+  "prettier": "@ionic/prettier-config"
 }

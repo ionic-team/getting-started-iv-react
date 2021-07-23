@@ -1,103 +1,104 @@
-import { useEffect, useMemo, useState } from "react";
-import { DeviceSecurityType, IdentityVaultConfig,  Vault, VaultType } from "@ionic-enterprise/identity-vault";
+import { Capacitor } from '@capacitor/core';
+import {
+  BrowserVault,
+  DeviceSecurityType,
+  IdentityVaultConfig,
+  Vault,
+  VaultType,
+} from '@ionic-enterprise/identity-vault';
+import { useEffect, useMemo, useState } from 'react';
 
-let config: IdentityVaultConfig = {
-  key: "io.ionic.getstartedivreact",
-  type: "SecureStorage",
-  deviceSecurityType: "SystemPasscode",
+const config: IdentityVaultConfig = {
+  key: 'io.ionic.getstartedivreact',
+  type: VaultType.SecureStorage,
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
   unlockVaultOnLoad: false,
 };
+const key = 'sessionData';
 
-const key = "sessionData";
+type LockType = 'NoLocking' | 'Biometrics' | 'SystemPasscode' | undefined;
+
+const getConfigUpdates = (lockType: LockType) => {
+  switch (lockType) {
+    case 'Biometrics':
+      return {
+        type: VaultType.DeviceSecurity,
+        deviceSecurityType: DeviceSecurityType.Biometrics,
+      };
+    case 'SystemPasscode':
+      return {
+        type: VaultType.DeviceSecurity,
+        deviceSecurityType: DeviceSecurityType.SystemPasscode,
+      };
+    default:
+      return {
+        type: VaultType.SecureStorage,
+        deviceSecurityType: DeviceSecurityType.SystemPasscode,
+      };
+  }
+};
 
 export const useVault = () => {
-  const [sessionValue, setSessionValue] = useState<string>("");
+  const [session, setSession] = useState<string | undefined>(undefined);
   const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
-  const [lockType, setLockType] =
-    useState<"NoLocking" | "Biometrics" | "SystemPasscode" | undefined>(undefined);
-  const [vaultExists, setVaultExists] = useState<boolean>(false);
+  const [lockType, setLockType] = useState<LockType>(undefined);
 
   const vault = useMemo(() => {
-    const vault = new Vault(config);
-    vault.doesVaultExist().then((res) => setVaultExists(res));
+    const vault =
+      Capacitor.getPlatform() === 'web'
+        ? new BrowserVault(config)
+        : new Vault(config);
 
     vault.onLock(() => {
       setVaultIsLocked(true);
-      setSessionValue("");
+      setSession(undefined);
     });
 
     vault.onUnlock(() => setVaultIsLocked(false));
+
+    console.log(vault.config);
 
     return vault;
   }, []);
 
   useEffect(() => {
-    let type: VaultType;
-    let deviceSecurityType: DeviceSecurityType;
-
     if (lockType) {
-      switch (lockType) {
-        case "Biometrics":
-          type = "DeviceSecurity";
-          deviceSecurityType = "Biometrics";
-          break;
-        case "SystemPasscode":
-          type = "DeviceSecurity";
-          deviceSecurityType = "SystemPasscode";
-          break;
-        default:
-          type = "SecureStorage";
-          deviceSecurityType = "SystemPasscode";
-          break;
-      }
-
-      config = { ...config, type, deviceSecurityType };
-      vault.updateConfig(config);
+      const { type, deviceSecurityType } = getConfigUpdates(lockType);
+      vault.updateConfig({ ...vault.config, type, deviceSecurityType });
     }
   }, [lockType, vault]);
 
-  const setSession = async (value: string): Promise<void> => {
-    setSessionValue(value);
+  const storeSession = async (value: string): Promise<void> => {
+    setSession(value);
     await vault.setValue(key, value);
-    setVaultExists(await vault.doesVaultExist());
   };
 
-  const restoreSession = async () => {
+  const restoreSession = async (): Promise<void> => {
     const value = await vault.getValue(key);
-    setSessionValue(value);
+    setSession(value);
   };
 
-  const lockVault = () => {
-    vault.lock();
+  const lockVault = async (): Promise<void> => {
+    await vault.lock();
   };
 
-  const unlockVault = () => {
-    vault.unlock();
-  };
-
-  const clearVault = async () => {
-    await vault.clear();
-    setLockType("NoLocking");
-    setSession("");
-    setVaultExists(await vault.doesVaultExist());
+  const unlockVault = async (): Promise<void> => {
+    await vault.unlock();
   };
 
   return {
-    session: sessionValue,
+    session,
     vaultIsLocked,
-    vaultExists,
-
-    lockType,
-    setLockType,
 
     lockVault,
     unlockVault,
-    clearVault,
 
-    setSession,
+    storeSession,
     restoreSession,
+
+    lockType,
+    setLockType,
   };
 };
