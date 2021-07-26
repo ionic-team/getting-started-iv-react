@@ -418,14 +418,14 @@ Build the app and play around with changing the checkbox and putting the app in 
 
 The mechanism used to unlock the vault is determined by a combination of the `type` and the `deviceSecurityType` configuration settings.
 
-The `type` can be any of the following:
+The `type` setting can be set to any value from the `VaultType` enumeration:
 
 - `SecureStorage`: Securely store the data in the keychain, but do not lock it.
 - `DeviceSecurity`: When the vault is locked, it needs to be unlocked by a mechanism provided by the device.
 - `CustomPasscode`: When the vault is locked, it needs to be unlocked via a custom method provided by the application. This is typically done in the form of a custom PIN dialog.
 - `InMemory`: The data is never persisted. As a result, if the application is locked or restarted the data is gone.
 
-In addition to these types, if `DeviceSecurity` is used, it is further refined by the `deviceSecurityType` which can be any of the following values:
+In addition to these types, the optional `deviceSecurityType` setting can be used to further refine the vault using a value from the `DeviceSecurity` enumeration:
 
 - `Biometrics`: Use the biometric authentication type specified by the device.
 - `SystemPasscode`: Use the system passcode entry screen.
@@ -436,7 +436,7 @@ We specified `SecureStorage` when we set up the vault:
 ```typescript
 const config: IdentityVaultConfig = {
   key: 'io.ionic.getstartedivreact',
-  type: 'SecureStorage',
+  type: VaultType.SecureStorage,
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
