@@ -13,9 +13,6 @@ import {
   IonTitle,
   IonToolbar,
   IonCheckbox,
-  IonRadioGroup,
-  IonListHeader,
-  IonRadio,
 } from '@ionic/react';
 import { Device } from '@ionic-enterprise/identity-vault';
 import './Home.css';
@@ -31,21 +28,15 @@ const Home: React.FC = () => {
     lockVault,
     unlockVault,
     vaultIsLocked,
-    lockType,
-    setLockType,
     vaultExists,
     clearVault,
   } = useVault();
   const [data, setData] = useState<string>('');
   const [privacyScreen, setPrivacyScreen] = useState<boolean>(false);
-  const [canUseSystemPin, setCanUseSystemPin] = useState<boolean>(false);
-  const [canUseBiometrics, setCanUseBiometrics] = useState<boolean>(false);
 
   useEffect(() => {
     if (isMobile) {
       Device.isHideScreenOnBackgroundEnabled().then(setPrivacyScreen);
-      Device.isSystemPasscodeSet().then(setCanUseSystemPin);
-      Device.isBiometricsEnabled().then(setCanUseBiometrics);
     }
   }, []);
 
@@ -132,27 +123,6 @@ const Home: React.FC = () => {
               onIonChange={e => setPrivacyScreen(e.detail.checked!)}
             />
           </IonItem>
-
-          <IonRadioGroup
-            value={lockType}
-            onIonChange={e => setLockType(e.detail.value!)}
-          >
-            <IonListHeader>
-              <IonLabel>Vault Locking Mechanism</IonLabel>
-            </IonListHeader>
-            <IonItem>
-              <IonLabel>Do Not Lock</IonLabel>
-              <IonRadio value="NoLocking" />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Use Biometrics</IonLabel>
-              <IonRadio disabled={!canUseBiometrics} value="Biometrics" />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Use System Passcode</IonLabel>
-              <IonRadio disabled={!canUseSystemPin} value="SystemPasscode" />
-            </IonItem>
-          </IonRadioGroup>
         </IonList>
       </IonContent>
     </IonPage>

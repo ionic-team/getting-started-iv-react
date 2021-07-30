@@ -1,16 +1,17 @@
 import { Capacitor } from '@capacitor/core';
 import {
   BrowserVault,
-  DeviceSecurityType,
   IdentityVaultConfig,
   Vault,
   VaultType,
 } from '@ionic-enterprise/identity-vault';
+import { useIonModal } from '@ionic/react';
 import { useEffect, useMemo, useState } from 'react';
+import CustomPasscode from '../components/CustomPasscode';
 
 const config: IdentityVaultConfig = {
   key: 'io.ionic.getstartedivreact',
-  type: VaultType.SecureStorage,
+  type: VaultType.CustomPasscode,
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
@@ -18,33 +19,26 @@ const config: IdentityVaultConfig = {
 };
 const key = 'sessionData';
 
-type LockType = 'NoLocking' | 'Biometrics' | 'SystemPasscode' | undefined;
+/** Set a custom type to handle data coming back from the dismiss method */
+type CustomPasscodeCallback = (opts: { data: any; role?: string }) => void;
 
-const getConfigUpdates = (lockType: LockType) => {
-  switch (lockType) {
-    case 'Biometrics':
-      return {
-        type: VaultType.DeviceSecurity,
-        deviceSecurityType: DeviceSecurityType.Biometrics,
-      };
-    case 'SystemPasscode':
-      return {
-        type: VaultType.DeviceSecurity,
-        deviceSecurityType: DeviceSecurityType.SystemPasscode,
-      };
-    default:
-      return {
-        type: VaultType.SecureStorage,
-        deviceSecurityType: DeviceSecurityType.SystemPasscode,
-      };
-  }
-};
+/** We need to create a callback that gets invoked within the onPasscodeRequested event */
+let passcodeRequestCallback: CustomPasscodeCallback = () => {};
 
 export const useVault = () => {
   const [session, setSession] = useState<string | undefined>(undefined);
   const [vaultIsLocked, setVaultIsLocked] = useState<boolean>(false);
-  const [lockType, setLockType] = useState<LockType>(undefined);
   const [vaultExists, setVaultExists] = useState<boolean>(false);
+
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [isSetPasscodeMode, setIsSetPasscodeMode] = useState<boolean>(false);
+  const [present, dismiss] = useIonModal(CustomPasscode, {
+    /** Determines if the user needs to set their passcode, or verify it. */
+    isSetPasscodeMode,
+    /** Call our custom callback when the modal is dismissed. */
+    onDismiss: (opts: { data: any; role?: string }) =>
+      passcodeRequestCallback(opts),
+  });
 
   const vault = useMemo(() => {
     const vault =
@@ -62,15 +56,33 @@ export const useVault = () => {
     vault.isLocked().then(setVaultIsLocked);
     vault.doesVaultExist().then(setVaultExists);
 
+    vault.onPasscodeRequested(async isSetPasscodeMode => {
+      return new Promise(resolve => {
+        /** Define our passcode request callback functionality. */
+
+        passcodeRequestCallback = (opts: { data: any; role?: string }) => {
+          /** If the user cancelled the prompt we will pass in an empty string */
+          /** Otherwise, send over the passcode provided by the user */
+          if (opts.role === 'cancel') vault.setCustomPasscode('');
+          else vault.setCustomPasscode(opts.data);
+          setIsSetPasscodeMode(false);
+          setShowModal(false);
+          resolve();
+        };
+
+        /** Update state variables so we can show the modal in it's correct mode */
+        setIsSetPasscodeMode(isSetPasscodeMode);
+        setShowModal(true);
+      });
+    });
+
     return vault;
   }, []);
 
   useEffect(() => {
-    if (lockType) {
-      const { type, deviceSecurityType } = getConfigUpdates(lockType);
-      vault.updateConfig({ ...vault.config, type, deviceSecurityType });
-    }
-  }, [lockType, vault]);
+    /** showModal let us know if we should show or hide the modal. */
+    showModal ? present() : dismiss();
+  }, [showModal, present, dismiss]);
 
   const storeSession = async (value: string): Promise<void> => {
     setSession(value);
@@ -94,7 +106,6 @@ export const useVault = () => {
 
   const clearVault = async (): Promise<void> => {
     await vault.clear();
-    setLockType('NoLocking');
     setSession(undefined);
     const exists = await vault.doesVaultExist();
     setVaultExists(exists);
@@ -109,9 +120,6 @@ export const useVault = () => {
 
     storeSession,
     restoreSession,
-
-    lockType,
-    setLockType,
 
     vaultExists,
     clearVault,
