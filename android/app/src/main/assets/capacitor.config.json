@@ -1,0 +1,6 @@
+{
+  "appId": "io.ionic.gettingstartedivreact",
+  "appName": "getting-started-iv-react",
+  "webDir": "build",
+  "bundledWebRuntime": false
+}

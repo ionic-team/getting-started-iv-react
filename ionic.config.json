@@ -1,0 +1,7 @@
+{
+  "name": "getting-started-iv-react",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
