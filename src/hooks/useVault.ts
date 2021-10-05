@@ -35,7 +35,7 @@ const getConfigUpdates = (lockType: LockType) => {
     default:
       return {
         type: VaultType.SecureStorage,
-        deviceSecurityType: DeviceSecurityType.SystemPasscode,
+        deviceSecurityType: DeviceSecurityType.None,
       };
   }
 };
