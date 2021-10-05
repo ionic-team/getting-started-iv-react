@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 const config: IdentityVaultConfig = {
   key: 'io.ionic.getstartedivreact',
   type: VaultType.SecureStorage,
+  deviceSecurityType: DeviceSecurityType.None,
   lockAfterBackgrounded: 2000,
   shouldClearVaultAfterTooManyFailedAttempts: true,
   customPasscodeInvalidUnlockAttempts: 2,
