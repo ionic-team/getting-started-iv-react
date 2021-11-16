@@ -214,14 +214,14 @@ const Home: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Blank</IonTitle>
+          <IonTitle>Identity Vault</IonTitle>
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen>
         <IonHeader collapse="condense">
           <IonToolbar>
-            <IonTitle size="large">Blank</IonTitle>
+            <IonTitle size="large">Identity Vault</IonTitle>
           </IonToolbar>
         </IonHeader>
 
@@ -235,19 +235,19 @@ const Home: React.FC = () => {
           </IonItem>
 
           <IonItem>
-            <IonLabel>
+            <div style={{ flex: 'auto' }}>
               <IonButton expand="block" onClick={() => storeSession(data)}>
                 Set Session Data
               </IonButton>
-            </IonLabel>
+            </div>
           </IonItem>
 
           <IonItem>
-            <IonLabel>
+            <div style={{ flex: 'auto' }}>
               <IonButton expand="block" onClick={restoreSession}>
                 Restore Session Data
               </IonButton>
-            </IonLabel>
+            </div>
           </IonItem>
 
           <IonItem>
@@ -302,19 +302,19 @@ We can then add a couple of buttons to our `Home.tsx` component file:
 
 ```jsx
 <IonItem>
-  <IonLabel>
+  <div style={{ flex: 'auto' }}>
     <IonButton expand="block" onClick={lockVault}>
       Lock Vault
     </IonButton>
-  </IonLabel>
+  </div>
 </IonItem>
 
 <IonItem>
-  <IonLabel>
+  <div style={{ flex: 'auto' }}>
     <IonButton expand="block" onClick={unlockVault}>
       Unlock Vault
     </IonButton>
-  </IonLabel>
+  </div>
 </IonItem>
 ```
 
@@ -367,10 +367,10 @@ Finally, update `Home.tsx` to display the `vaultIsLocked` value along with the s
 
 ```jsx
 <IonItem>
-  <IonLabel>
+  <div style={{ flex: 'auto' }}>
     <div>Session Data: {session}</div>
     <div>Vault is Locked: {vaultIsLocked.toString()}</div>
-  </IonLabel>
+  </div>
 </IonItem>
 ```
 
