@@ -4,12 +4,13 @@ import {
   DeviceSecurityType,
   IdentityVaultConfig,
   Vault,
+  VaultError,
   VaultType,
 } from '@ionic-enterprise/identity-vault';
 import { useEffect, useMemo, useState } from 'react';
 
 const config: IdentityVaultConfig = {
-  key: 'io.ionic.getstartedivreact',
+  key: 'io.ionic.getstartedivreact7890',
   type: VaultType.SecureStorage,
   deviceSecurityType: DeviceSecurityType.None,
   lockAfterBackgrounded: 2000,
@@ -47,6 +48,9 @@ export const useVault = () => {
   const [lockType, setLockType] = useState<LockType>(undefined);
   const [vaultExists, setVaultExists] = useState<boolean>(false);
 
+  const [type, setType] = useState<string>('');
+  const [security, setSecurity] = useState<string>('');
+
   const vault = useMemo(() => {
     const vault =
       Capacitor.getPlatform() === 'web'
@@ -63,13 +67,40 @@ export const useVault = () => {
     vault.isLocked().then(setVaultIsLocked);
     vault.doesVaultExist().then(setVaultExists);
 
+    setType(vault.config.type.toString());
+    setSecurity(vault.config.deviceSecurityType?.toString() || '');
+
+    vault.onError(async (err: VaultError) => {
+      if (err.code === 8) {
+        console.error('I AM A CUSTOM ERROR');
+
+        await vault.updateConfig({
+          ...vault.config,
+          type: VaultType.SecureStorage,
+          deviceSecurityType: DeviceSecurityType.None,
+        });
+        setType(vault.config.type.toString());
+        setSecurity(vault.config.deviceSecurityType?.toString() || '');
+      }
+    });
+
     return vault;
   }, []);
 
   useEffect(() => {
-    if (lockType) {
+    const run = async () => {
       const { type, deviceSecurityType } = getConfigUpdates(lockType);
-      vault.updateConfig({ ...vault.config, type, deviceSecurityType });
+      await vault.updateConfig({ ...vault.config, type, deviceSecurityType });
+      console.log('Vault Config Updated', {
+        type: vault.config.type,
+        security: vault.config?.deviceSecurityType || '',
+      });
+      setType(vault.config.type.toString());
+      setSecurity(vault.config.deviceSecurityType?.toString() || '');
+    };
+
+    if (lockType) {
+      run();
     }
   }, [lockType, vault]);
 
@@ -116,5 +147,8 @@ export const useVault = () => {
 
     vaultExists,
     clearVault,
+
+    type,
+    security,
   };
 };
