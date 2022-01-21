@@ -7,10 +7,12 @@ import {
   VaultError,
   VaultType,
 } from '@ionic-enterprise/identity-vault';
+import { useIonModal } from '@ionic/react';
 import { useEffect, useMemo, useState } from 'react';
+import CustomPasscode from '../components/CustomPasscode';
 
 const config: IdentityVaultConfig = {
-  key: 'io.ionic.getstartedivreact7890',
+  key: 'io.ionic.getstartedivreact',
   type: VaultType.SecureStorage,
   deviceSecurityType: DeviceSecurityType.None,
   lockAfterBackgrounded: 2000,
@@ -20,7 +22,15 @@ const config: IdentityVaultConfig = {
 };
 const key = 'sessionData';
 
-type LockType = 'NoLocking' | 'Biometrics' | 'SystemPasscode' | undefined;
+type LockType =
+  | 'NoLocking'
+  | 'Biometrics'
+  | 'SystemPasscode'
+  | 'CustomPasscode'
+  | undefined;
+
+type CustomPasscodeCallback = (opts: { data: any; role?: string }) => void;
+let passcodeRequestCallback: CustomPasscodeCallback = () => {};
 
 const getConfigUpdates = (lockType: LockType) => {
   switch (lockType) {
@@ -33,6 +43,11 @@ const getConfigUpdates = (lockType: LockType) => {
       return {
         type: VaultType.DeviceSecurity,
         deviceSecurityType: DeviceSecurityType.SystemPasscode,
+      };
+    case 'CustomPasscode':
+      return {
+        type: VaultType.CustomPasscode,
+        deviceSecurityType: DeviceSecurityType.None,
       };
     default:
       return {
@@ -50,6 +65,16 @@ export const useVault = () => {
 
   const [type, setType] = useState<string>('');
   const [security, setSecurity] = useState<string>('');
+
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [isSetPasscodeMode, setIsSetPasscodeMode] = useState<boolean>(false);
+  const [present, dismiss] = useIonModal(CustomPasscode, {
+    /** Determines if the user needs to set their passcode, or verify it. */
+    isSetPasscodeMode,
+    /** Call our custom callback when the modal is dismissed. */
+    onDismiss: (opts: { data: any; role?: string }) =>
+      passcodeRequestCallback(opts),
+  });
 
   const vault = useMemo(() => {
     const vault =
@@ -70,18 +95,24 @@ export const useVault = () => {
     setType(vault.config.type.toString());
     setSecurity(vault.config.deviceSecurityType?.toString() || '');
 
-    vault.onError(async (err: VaultError) => {
-      if (err.code === 8) {
-        console.error('I AM A CUSTOM ERROR');
+    vault.onPasscodeRequested(async isSetPasscodeMode => {
+      return new Promise(resolve => {
+        /** Define our passcode request callback functionality. */
 
-        await vault.updateConfig({
-          ...vault.config,
-          type: VaultType.SecureStorage,
-          deviceSecurityType: DeviceSecurityType.None,
-        });
-        setType(vault.config.type.toString());
-        setSecurity(vault.config.deviceSecurityType?.toString() || '');
-      }
+        passcodeRequestCallback = (opts: { data: any; role?: string }) => {
+          /** If the user cancelled the prompt we will pass in an empty string */
+          /** Otherwise, send over the passcode provided by the user */
+          if (opts.role === 'cancel') vault.setCustomPasscode('');
+          else vault.setCustomPasscode(opts.data);
+          setIsSetPasscodeMode(false);
+          setShowModal(false);
+          resolve();
+        };
+
+        /** Update state variables so we can show the modal in it's correct mode */
+        setIsSetPasscodeMode(isSetPasscodeMode);
+        setShowModal(true);
+      });
     });
 
     return vault;
@@ -110,6 +141,11 @@ export const useVault = () => {
     const exists = await vault.doesVaultExist();
     setVaultExists(exists);
   };
+
+  useEffect(() => {
+    /** showModal let us know if we should show or hide the modal. */
+    showModal ? present() : dismiss();
+  }, [showModal, present, dismiss]);
 
   const restoreSession = async (): Promise<void> => {
     const value = await vault.getValue(key);

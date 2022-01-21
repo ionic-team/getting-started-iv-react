@@ -80,14 +80,6 @@ const Home: React.FC = () => {
             </IonLabel>
           </IonItem>
 
-          {/* <IonItem>
-            <IonLabel position="floating">Enter the "session" data</IonLabel>
-            <IonInput
-              value={data}
-              onIonChange={e => setData(e.detail.value!)}
-            />
-          </IonItem> */}
-
           <IonItem>
             <div style={{ flex: 'auto' }}>
               <IonButton
@@ -150,6 +142,10 @@ const Home: React.FC = () => {
             <IonItem>
               <IonLabel>Do Not Lock</IonLabel>
               <IonRadio value="NoLocking" />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Use Custom Passcode</IonLabel>
+              <IonRadio value="CustomPasscode" />
             </IonItem>
             <IonItem>
               <IonLabel>Use Biometrics</IonLabel>
