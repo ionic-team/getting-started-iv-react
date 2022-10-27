@@ -4,14 +4,14 @@
   "private": true,
   "description": "Getting Started with Identity Vault",
   "dependencies": {
-    "@capacitor/android": "3.4.0",
-    "@capacitor/app": "1.1.0",
-    "@capacitor/core": "3.4.0",
-    "@capacitor/haptics": "1.1.4",
-    "@capacitor/ios": "3.4.0",
-    "@capacitor/keyboard": "1.2.1",
-    "@capacitor/status-bar": "1.0.7",
-    "@ionic-enterprise/identity-vault": "~5.4.0",
+    "@capacitor/android": "4.4.0",
+    "@capacitor/app": "4.1.0",
+    "@capacitor/core": "4.4.0",
+    "@capacitor/haptics": "4.0.1",
+    "@capacitor/ios": "4.4.0",
+    "@capacitor/keyboard": "4.0.1",
+    "@capacitor/status-bar": "4.0.1",
+    "@ionic-enterprise/identity-vault": "~5.9.3",
     "@ionic/react": "^6.0.0",
     "@ionic/react-router": "^6.0.0",
     "@testing-library/jest-dom": "^5.11.9",
@@ -76,8 +76,8 @@
     ]
   },
   "devDependencies": {
-    "@capacitor/cli": "3.4.0",
-    "@ionic/prettier-config": "~1.0.1",
+    "@capacitor/cli": "4.4.0",
+    "@ionic/prettier-config": "~2.0.0",
     "husky": "~7.0.1",
     "prettier": "~2.3.2",
     "pretty-quick": "~3.1.1"
