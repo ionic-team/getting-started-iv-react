@@ -1,40 +1,39 @@
-/* eslint-disable react/no-unescaped-entities */
-import React, { useEffect, useState } from 'react';
+import { Device } from '@ionic-enterprise/identity-vault';
 import {
-  isPlatform,
   IonButton,
+  IonCheckbox,
   IonContent,
   IonHeader,
   IonInput,
   IonItem,
   IonLabel,
   IonList,
+  IonListHeader,
   IonPage,
+  IonRadio,
+  IonRadioGroup,
   IonTitle,
   IonToolbar,
-  IonCheckbox,
-  IonRadioGroup,
-  IonListHeader,
-  IonRadio,
+  isPlatform,
 } from '@ionic/react';
-import { Device } from '@ionic-enterprise/identity-vault';
-import './Home.css';
+import React, { useEffect, useState } from 'react';
 import { useVault } from '../hooks/useVault';
+import './Home.css';
 
 const isMobile = isPlatform('hybrid');
 
 const Home: React.FC = () => {
   const {
     session,
+    vaultIsLocked,
     storeSession,
     restoreSession,
     lockVault,
     unlockVault,
-    vaultIsLocked,
     lockType,
     setLockType,
-    vaultExists,
     clearVault,
+    vaultExists,
   } = useVault();
   const [data, setData] = useState<string>('');
   const [privacyScreen, setPrivacyScreen] = useState<boolean>(false);
@@ -67,20 +66,14 @@ const Home: React.FC = () => {
             <IonTitle size="large">Identity Vault</IonTitle>
           </IonToolbar>
         </IonHeader>
+
         <IonList>
           <IonItem>
-            <IonLabel>
-              <div>Session Data: {session}</div>
-              <div>Vault is Locked: {vaultIsLocked.toString()}</div>
-              <div>Vault Exists: {vaultExists.toString()}</div>
-            </IonLabel>
-          </IonItem>
-
-          <IonItem>
-            <IonLabel position="floating">Enter the "session" data</IonLabel>
             <IonInput
+              label="Enter the &ldquo;session&rdquo; data"
+              labelPlacement="floating"
               value={data}
-              onIonChange={e => setData(e.detail.value!)}
+              onIonChange={(e) => setData(e.detail.value!)}
             />
           </IonItem>
 
@@ -125,32 +118,45 @@ const Home: React.FC = () => {
           </IonItem>
 
           <IonItem>
-            <IonLabel>Use Privacy Screen</IonLabel>
             <IonCheckbox
               disabled={!isMobile}
               checked={privacyScreen}
-              onIonChange={e => setPrivacyScreen(e.detail.checked!)}
-            />
+              onIonChange={(e) => setPrivacyScreen(e.detail.checked!)}
+            >
+              Use Privacy Screen
+            </IonCheckbox>
           </IonItem>
 
-          <IonRadioGroup
-            value={lockType}
-            onIonChange={e => setLockType(e.detail.value!)}
-          >
+          <IonItem>
+            <IonLabel>
+              <div>Session Data: {session}</div>
+            </IonLabel>
+          </IonItem>
+
+          <IonItem>
+            <IonLabel>
+              <div>Session Data: {session}</div>
+              <div>Vault Exists: {vaultExists.toString()}</div>
+              <div>Vault is Locked: {vaultIsLocked.toString()}</div>
+            </IonLabel>
+          </IonItem>
+
+          <IonRadioGroup value={lockType} onIonChange={(e) => setLockType(e.detail.value!)}>
             <IonListHeader>
               <IonLabel>Vault Locking Mechanism</IonLabel>
             </IonListHeader>
             <IonItem>
-              <IonLabel>Do Not Lock</IonLabel>
-              <IonRadio value="NoLocking" />
+              <IonRadio value="NoLocking">Do Not Lock</IonRadio>
             </IonItem>
             <IonItem>
-              <IonLabel>Use Biometrics</IonLabel>
-              <IonRadio disabled={!canUseBiometrics} value="Biometrics" />
+              <IonRadio disabled={!canUseBiometrics} value="Biometrics">
+                Use Biometrics
+              </IonRadio>
             </IonItem>
             <IonItem>
-              <IonLabel>Use System Passcode</IonLabel>
-              <IonRadio disabled={!canUseSystemPin} value="SystemPasscode" />
+              <IonRadio disabled={!canUseSystemPin} value="SystemPasscode">
+                Use System Passcode
+              </IonRadio>
             </IonItem>
           </IonRadioGroup>
         </IonList>

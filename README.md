@@ -1,6 +1,6 @@
 # Getting Started with Identity Vault in @ionic/react
 
-In this tutorial we will walk through the basic setup and use of <a href="https://ionic.io/products/identity-vault" target="_blank">Ionic's Identity Vault</a> in an `@ionic/react` application.
+In this tutorial we will walk through the basic setup and use of Ionic's Identity Vault in an `@ionic/react` application.
 
 :::note
 The source code for the Ionic application created in this tutorial can be found [here](https://github.com/ionic-team/getting-started-iv-react)
@@ -32,8 +32,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'io.ionic.gettingstartedivreact',
   appName: 'getting-started-iv-react',
-  webDir: 'build',
-  bundledWebRuntime: false,
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
 };
 
 export default config;
@@ -51,7 +53,7 @@ Finally, in order to ensure that the web application bundle is copied over each 
 
 ```json
 "scripts": {
-  "build": "react-scripts build && cap copy",
+  "build": "tsc && vite build && cap copy",
   ...
 },
 ```
@@ -66,6 +68,7 @@ You can now install Identity Vault:
 
 ```bash
 npm install @ionic-enterprise/identity-vault
+npx cap update
 ```
 
 ## Create the Vault
@@ -100,9 +103,7 @@ export const useVault = () => {
   const [session, setSession] = useState<string | undefined>(undefined);
 
   const vault = useMemo(() => {
-    return Capacitor.getPlatform() === 'web'
-      ? new BrowserVault(config)
-      : new Vault(config);
+    return Capacitor.getPlatform() === 'web' ? new BrowserVault(config) : new Vault(config);
   }, []);
 
   const storeSession = async (value: string): Promise<void> => {
@@ -148,9 +149,7 @@ export const useVault = () => {
   const [session, setSession] = useState<string | undefined>(undefined);
 
   const vault = useMemo(() => {
-    return Capacitor.getPlatform() === 'web'
-      ? new BrowserVault(config)
-      : new Vault(config);
+    return Capacitor.getPlatform() === 'web' ? new BrowserVault(config) : new Vault(config);
   }, []);
 
   const storeSession = async (value: string): Promise<void> => {
@@ -169,17 +168,19 @@ export const useVault = () => {
 
 The hook additionally contains a state property that will be used to reflect the current `session` data to the outside world. It returns our `session` as well as functions that are used to store and restore our session.
 
-> It's recommended to abstract vault functionality into functions that define how the rest of the application should interact with the vault instead of directly returning the `vault` instance. This creates more maintainable and debuggable code, while preventing the rest of the code from being exposed to potential API changes and reduces the chance of duplicating code.
+:::note
+It's recommended to abstract vault functionality into functions that define how the rest of the application should interact with the vault instead of directly returning the `vault` instance. This creates more maintainable and debuggable code, while preventing the rest of the code from being exposed to potential API changes and reduces the chance of duplicating code.
+:::
 
 Note that we are using the `BrowserVault` class when the application is running on the web. The `BrowserVault` allows us to continue to use our normal web-based development workflow.
 
 ```typescript
-return Capacitor.getPlatform() === 'web'
-  ? new BrowserVault(config)
-  : new Vault(config);
+return Capacitor.getPlatform() === 'web' ? new BrowserVault(config) : new Vault(config);
 ```
 
-> The `BrowserVault` class allows developers to use their normal web-based development workflow. It does **not** provide locking or security functionality.
+:::note
+The `BrowserVault` class allows developers to use their normal web-based development workflow. It does **not** provide locking or security functionality.
+:::
 
 Now that we have the vault in place, let's switch over to `src/pages/Home.tsx` and implement some simple interactions with the vault. Here is a snapshot of what we will change:
 
@@ -227,10 +228,11 @@ const Home: React.FC = () => {
 
         <IonList>
           <IonItem>
-            <IonLabel position="floating">Enter the "session" data</IonLabel>
             <IonInput
+              label="Enter the &ldquo;session&rdquo; data"
+              labelPlacement="floating"
               value={data}
-              onIonChange={e => setData(e.detail.value!)}
+              onIonChange={(e) => setData(e.detail.value!)}
             />
           </IonItem>
 
@@ -264,7 +266,9 @@ const Home: React.FC = () => {
 export default Home;
 ```
 
-> Throughout the rest of this tutorial only new markup or required code will be provided. It is up to you to make sure that the correct imports and component definitions are added.
+:::note
+Throughout the rest of this tutorial only new markup or required code will be provided. It is up to you to make sure that the correct imports and component definitions are added.
+:::
 
 Build the application and run it on an iOS and/or Android device. You should be able to enter some data and store it in the vault by clicking "Set Session Data." If you then shutdown the app and start it again, you should be able to restore it using "Restore Session Data."
 
@@ -298,7 +302,13 @@ return {
 };
 ```
 
-We can then add a couple of buttons to our `Home.tsx` component file:
+In our `Home.tsx` component file update the `useVault()` call to add the two new functions to the destructuring:
+
+```typescript
+const { session, storeSession, restoreSession, lockVault, unlockVault } = useVault();
+```
+
+We can then add a couple of buttons to the component:
 
 ```jsx
 <IonItem>
@@ -332,10 +342,7 @@ Next, the vault's `onLock` and `onUnlock` events need to be handled. Modify the 
 
 ```typescript
 const vault = useMemo(() => {
-  const vault =
-    Capacitor.getPlatform() === 'web'
-      ? new BrowserVault(config)
-      : new Vault(config);
+  const vault = Capacitor.getPlatform() === 'web' ? new BrowserVault(config) : new Vault(config);
 
   vault.onLock(() => {
     setVaultIsLocked(true);
@@ -367,10 +374,10 @@ Finally, update `Home.tsx` to display the `vaultIsLocked` value along with the s
 
 ```jsx
 <IonItem>
-  <div style={{ flex: 'auto' }}>
+  <IonLabel>
     <div>Session Data: {session}</div>
     <div>Vault is Locked: {vaultIsLocked.toString()}</div>
-  </div>
+  </IonLabel>
 </IonItem>
 ```
 
@@ -378,7 +385,9 @@ Build and run the application. When the user presses the "Lock Vault" button, th
 
 In its current state, the vault is set to the `SecureStorage` vault type. We will be unable to observe any changes to the "Vault is Locked" value until we update the vault's configuration to a different vault type.
 
-> Vaults set to the `SecureStorage` vault type _do not_ lock. Data stored within this type of vault are still encrypted at rest and can be restored between sessions.
+:::note
+Vaults set to the `SecureStorage` vault type _do not_ lock. Data stored within this type of vault are still encrypted at rest and can be restored between sessions.
+:::
 
 In a few sections we will explore different vault types further, allowing us to test the ability to lock and unlock a vault. First, we will begin exploring the `Device` API.
 
@@ -430,12 +439,13 @@ Finally, we can add the checkbox to our template:
 
 ```jsx
  <IonItem>
-  <IonLabel>Use Privacy Screen</IonLabel>
   <IonCheckbox
     disabled={!isMobile}
     checked={privacyScreen}
     onIonChange={e => setPrivacyScreen(e.detail.checked!)}
-  />
+  >
+    Use Privacy Screen
+  </IonCheckbox>
 </IonItem>
 ```
 
@@ -530,29 +540,27 @@ useEffect(() => {
 Finally, add a group of radio buttons to `src/pages/Home.tsx` that control the type of vault being used. Remember to import any new components being used:
 
 ```jsx
-<IonRadioGroup
-  value={lockType}
-  onIonChange={e => setLockType(e.detail.value!)}
->
-  <IonListHeader>
-    <IonLabel>Vault Locking Mechanism</IonLabel>
-  </IonListHeader>
-  <IonItem>
-    <IonLabel>Do Not Lock</IonLabel>
-    <IonRadio value="NoLocking" />
-  </IonItem>
-  <IonItem>
-    <IonLabel>Use Biometrics</IonLabel>
-    <IonRadio disabled={!canUseBiometrics} value="Biometrics" />
-  </IonItem>
-  <IonItem>
-    <IonLabel>Use System Passcode</IonLabel>
-    <IonRadio disabled={!canUseSystemPin} value="SystemPasscode" />
-  </IonItem>
-</IonRadioGroup>
+          <IonRadioGroup value={lockType} onIonChange={(e) => setLockType(e.detail.value!)}>
+            <IonListHeader>
+              <IonLabel>Vault Locking Mechanism</IonLabel>
+            </IonListHeader>
+            <IonItem>
+              <IonRadio value="NoLocking">Do Not Lock</IonRadio>
+            </IonItem>
+            <IonItem>
+              <IonRadio disabled={!canUseBiometrics} value="Biometrics">
+                Use Biometrics
+              </IonRadio>
+            </IonItem>
+            <IonItem>
+              <IonRadio disabled={!canUseSystemPin} value="SystemPasscode">
+                Use System Passcode
+              </IonRadio>
+            </IonItem>
+          </IonRadioGroup>
 ```
 
-The "Use Biometrics" and "Use System Passcode" radio buttons will be disabled on whether or not the feature has been enabled on the device. We will need to code for that by adding state properties and updating the `useEffect` in the component:
+The "Use Biometrics" and "Use System Passcode" radio buttons will be disabled based on whether or not the feature has been enabled on the device. We will need to code for that by adding state properties and updating the `useEffect` in the component:
 
 ```typescript
 const [canUseSystemPin, setCanUseSystemPin] = useState<boolean>(false);
@@ -622,16 +630,16 @@ Don't forget to return `vaultExists` and `clearVault`.
 In order to see when a vault does or does not exist, let's add the following code to `clearVault()` and `storeSession()`:
 
 ```typescript
-const exists = await vault.doesVaultExist();
+const exists = !(await vault.isEmpty());
 setVaultExists(exists);
 ```
 
-We should also add a call within the `useMemo()` code block to initialize the value along with the vault. Since that function is not `async` we need to use the "promise-then" syntax: `vault.doesVaultExist().then(setVaultExists)`:
+We should also add a call within the `useMemo()` code block to initialize the value along with the vault. Since `useMemo()`'s callback is not `async` we need to use the "promise-then" syntax: `vault.doesVaultExist().then(setVaultExists)`:
 
 ```typescript
 const vault = useMemo(() => {
   ...
-  vault.doesVaultExist().then(setVaultExists);
+  vault.isEmpty().then((empty: boolean) => setVaultExists(!empty));
 
   return vault;
 }, []);
